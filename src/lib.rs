@@ -88,7 +88,7 @@ mod tests {
 	let _: vtype!(f64; / A) = 2.0 / a;
 	let _: vtype!(f64; A / ) = 2.0 / (2.0 / a);
 	let _: vtype!(f64; B / A) = b * 2.0 / a;
-	let x: vtype!(f64; D, C, B / E, A) = (b * 2.0 * c * d) / (a * e);
-	let _: vtype!(f64; E, A / D, B) = (2.0 * c) / x;
+	let x: vtype!(f64; D, C, B / E, E, A) = (b * 2.0 * c * d) / (e * a * e);
+	let _: vtype!(f64; E, E, A / D, B) = (2.0 * c) / x;
     }
 }

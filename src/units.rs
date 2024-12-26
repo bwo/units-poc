@@ -165,7 +165,7 @@ type DividedBy<M, D, U> = <U as sealed::DivideBy<Units<M, D>, Removed<U, M>>>::O
 
 impl<T: Mul<Output = T>, U: BaseUnit, V: BaseUnit> Mul<Value<T, U>> for Value<T, V>
 where
-    U: listtraits::InsortH<Cons<V, Nil>, { compare_type::<U, V>() }>,
+    U: listtraits::Insort<Cons<V, Nil>>,
 {
     type Output = Value<T, Units<Inserted<U, Cons<V, Nil>>, Nil>>;
     fn mul(self, rhs: Value<T, U>) -> Self::Output {
