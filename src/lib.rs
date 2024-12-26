@@ -2,8 +2,8 @@
 
 pub use units::{BaseUnit, Unit, Units, Value};
 
-pub mod list;
-pub mod units;
+mod list;
+mod units;
 
 #[macro_export]
 macro_rules! defunit {
@@ -36,7 +36,7 @@ macro_rules! tlist {
 macro_rules! units {
     () => { $crate::Units<$crate::list::Nil, $crate::list::Nil> };
     ($name:ident / ) => { $crate::Units<tlist!($name), $crate::list::Nil> } ;
-    (/ $name:ident ) => { $crate::Units<Nil, tlist!($name)> } ;
+    (/ $name:ident ) => { $crate::Units<$crate::list::Nil, tlist!($name)> } ;
     ($name:ident / $($tail:tt)*) => { $crate::Units<tlist!($name), tlist!($($tail)*)> } ;
     ($name:ident, $($ns:ident),+ /   $($tail:tt)* ) => { $crate::Units<tlist!($name, $($ns),+), tlist!($($tail)*)> } ;
 }
@@ -46,6 +46,23 @@ macro_rules! vtype {
     ($t:ty; $($units:tt)*) => { Value<$t, units!($($units)*)> }
 }
 
+/// ```compile_fail
+///
+/// defunit!(A)
+/// defunit!(B)
+/// let _ = A::new(1.0) + B::new(1.0);
+/// ```
+///
+/// ```compile_fail
+///
+/// defunit!(A)
+/// defunit!(B)
+/// let _ = A::new(1.0) + (B::new(1.0) * A::new(2.0));
+/// ```
+
+#[cfg(doctest)]
+pub struct T;
+
 #[cfg(test)]
 mod tests {
 
@@ -54,6 +71,7 @@ mod tests {
     defunit!(B);
     defunit!(C);
     defunit!(D);
+    defunit!(E);
 
     #[test]
     fn test_basics() {
@@ -61,9 +79,16 @@ mod tests {
         let b = B::new(1.0);
         let c = C::new(1.0);
         let d = D::new(1.0);
-        let _ = a * 5.0;
-        let _ = 5.0 * a;
-        let y = c * d;
+	let e = E::new(1.0);
+        let _ : vtype!(f64; A /) = a * 5.0;
+	let _ : vtype!(f64; A /) = 5.0 * a;
+        let _ : vtype!(f64; C /)= c + (d * (c / d));
+	let y = c * d;
         let _: vtype!(f64; C, D / A, B) = y / (a * b);
+	let _: vtype!(f64; / A) = 2.0 / a;
+	let _: vtype!(f64; A / ) = 2.0 / (2.0 / a);
+	let _: vtype!(f64; B / A) = b * 2.0 / a;
+	let x: vtype!(f64; D, C, B / E, A) = (b * 2.0 * c * d) / (a * e);
+	let _: vtype!(f64; E, A / D, B) = (2.0 * c) / x;
     }
 }
