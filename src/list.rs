@@ -11,19 +11,6 @@ pub struct Cons<H: HasName, T> {
 pub(crate) mod sealed {
 
     pub trait List {}
-    pub trait Maybe {}
-
-    pub trait Remove<L: List> {
-        type Output: Maybe;
-    }
-
-    pub trait RemoveH<L: List, const CMP: u8> {
-        type Output: Maybe;
-    }
-
-    pub trait RemoveR<H: super::HasName, Removed: Maybe> {
-        type Output: Maybe;
-    }
 
     pub trait Insort<L: List> {
         type Output: List;
@@ -76,57 +63,8 @@ pub const fn compare_u8a(a: &'static [u8], b: &'static [u8]) -> Ordering {
 impl sealed::List for Nil {}
 impl<H: HasName, T: sealed::List> sealed::List for Cons<H, T> {}
 
-pub struct Nothing;
-impl sealed::Maybe for Nothing {}
-pub struct Just<T> {
-    _t: PhantomData<T>,
-}
-impl<T> sealed::Maybe for Just<T> {}
-
 impl<U: HasName, V: HasName> TypeComparison<U> for V {
     const OUT: u8 = { compare_u8a(<V as HasName>::NAME, <U as HasName>::NAME) as u8 };
-}
-
-impl<T> sealed::Remove<Nil> for T {
-    type Output = Nothing;
-}
-
-impl<
-        Needle: HasName + sealed::RemoveH<Cons<H, T>, { compare_type::<Needle, H>() }>,
-        H: HasName,
-        T: sealed::List,
-    > sealed::Remove<Cons<H, T>> for Needle
-{
-    type Output = <Needle as sealed::RemoveH<Cons<H, T>, { compare_type::<Needle, H>() }>>::Output;
-}
-
-impl<Needle: HasName + sealed::Remove<T>, H: HasName, T: sealed::List>
-    sealed::RemoveH<Cons<H, T>, { Ordering::Equal as u8 }> for Needle
-{
-    type Output = Just<T>;
-}
-
-impl<Needle: HasName + sealed::Remove<T>, H: HasName, T: sealed::List>
-    sealed::RemoveH<Cons<H, T>, { Ordering::Greater as u8 }> for Needle
-{
-    type Output = Nothing;
-}
-
-impl<
-        Needle: HasName + sealed::RemoveR<H, Removed<Needle, T>> + sealed::Remove<T>,
-        H: HasName,
-        T: sealed::List,
-    > sealed::RemoveH<Cons<H, T>, { Ordering::Less as u8 }> for Needle
-{
-    type Output = <Needle as sealed::RemoveR<H, Removed<Needle, T>>>::Output;
-}
-
-impl<Needle: HasName, H: HasName> sealed::RemoveR<H, Nothing> for Needle {
-    type Output = Nothing;
-}
-
-impl<Needle: HasName, H: HasName, T: sealed::List> sealed::RemoveR<H, Just<T>> for Needle {
-    type Output = Just<Cons<H, T>>;
 }
 
 impl<H: HasName> sealed::Insort<Nil> for H {
@@ -204,6 +142,4 @@ where
 }
 
 pub(crate) type Merged<L1, L2> = <L1 as sealed::Merge<L2>>::Output;
-pub type Inserted<N, L> = <N as sealed::Insort<L>>::Output;
-pub(crate) type Removed<Needle, List> = <Needle as sealed::Remove<List>>::Output;
-pub(crate) type Singleton<T> = Cons<T, Nil>;
+pub type Inserted<H, T> = <H as sealed::Insort<T>>::Output;

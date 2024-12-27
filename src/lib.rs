@@ -1,6 +1,7 @@
 #![feature(generic_const_exprs)]
 
-pub use units::{BaseUnit, Unit, Units, Value};
+pub use list::Inserted;
+pub use units::{BaseUnit, Units, Value};
 
 mod list;
 mod units;
@@ -79,16 +80,16 @@ mod tests {
         let b = B::new(1.0);
         let c = C::new(1.0);
         let d = D::new(1.0);
-	let e = E::new(1.0);
-        let _ : vtype!(f64; A /) = a * 5.0;
-	let _ : vtype!(f64; A /) = 5.0 * a;
-        let _ : vtype!(f64; C /)= c + (d * (c / d));
-	let y = c * d;
+        let e = E::new(1.0);
+        let _: vtype!(f64; A /) = a * 5.0;
+        let _: vtype!(f64; A /) = 5.0 * a;
+        let _: vtype!(f64; C /) = c + (d * (c / d));
+        let y = c * d;
         let _: vtype!(f64; C, D / A, B) = y / (a * b);
-	let _: vtype!(f64; / A) = 2.0 / a;
-	let _: vtype!(f64; A / ) = 2.0 / (2.0 / a);
-	let _: vtype!(f64; B / A) = b * 2.0 / a;
-	let x: vtype!(f64; D, C, B / E, E, A) = (b * 2.0 * c * d) / (e * a * e);
-	let _: vtype!(f64; E, E, A / D, B) = (2.0 * c) / x;
+        let _: vtype!(f64; / A) = 2.0 / a;
+        let _: vtype!(f64; A / ) = 2.0 / (2.0 / a);
+        let _: vtype!(f64; B / A) = b * 2.0 / a;
+        let x: vtype!(f64; D, C, B / E, E, A) = (b * 2.0 * c * d) / (e * a * e);
+        let _: vtype!(f64; E, E, A / D, B) = (2.0 * c) / x;
     }
 }

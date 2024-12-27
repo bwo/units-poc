@@ -2,21 +2,10 @@ use std::cmp::Ordering;
 use std::marker::PhantomData;
 use std::ops::{Add, Div, Mul, Sub};
 
-use crate::list::{
-    compare_type, sealed as listtraits, Cons, HasName, Inserted, Just, Merged, Nil, Nothing,
-    Removed, Singleton, TypeComparison,
-};
+use crate::list::{compare_type, sealed as listtraits, Cons, HasName, Merged, Nil, TypeComparison};
 
 mod sealed {
     use crate::list::sealed::*;
-    pub trait MultiplyBy<U, IsDivisor: Maybe> {
-        type Output;
-    }
-
-    pub trait DivideBy<U, IsMultiplicand: Maybe> {
-        type Output;
-    }
-
     pub trait DivideList<Denom: List> {
         type N: List;
         type D: List;
@@ -26,6 +15,7 @@ mod sealed {
         type N: List;
         type D: List;
     }
+    pub trait Unit {}
 }
 
 impl sealed::DivideList<Nil> for Nil {
@@ -81,9 +71,6 @@ where
     type D = Denominator<T2, Cons<H1, T1>>;
 }
 
-pub trait Unit {}
-impl<T: BaseUnit> Unit for T {}
-
 pub trait BaseUnit {
     const NAME: &'static [u8];
 }
@@ -114,88 +101,17 @@ impl<M: listtraits::List, D: listtraits::List> Clone for Units<M, D> {
 }
 impl<M: listtraits::List, D: listtraits::List> Copy for Units<M, D> {}
 
-impl<M: listtraits::List, D: listtraits::List> Unit for Units<M, D> {}
+impl<M: listtraits::List, D: listtraits::List> sealed::Unit for Units<M, D> {}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Value<T, U: Unit> {
+pub struct Value<T, U: sealed::Unit> {
     t: T,
     _u: PhantomData<U>,
 }
 
-impl<T, U: Unit> Value<T, U> {
+impl<T, U: sealed::Unit> Value<T, U> {
     pub const fn new(t: T) -> Value<T, U> {
         Value { t, _u: PhantomData }
-    }
-}
-
-impl<M: listtraits::List, D: listtraits::List, U: BaseUnit + listtraits::Insort<M>>
-    sealed::MultiplyBy<Units<M, D>, Nothing> for U
-{
-    type Output = Units<Inserted<U, M>, D>;
-}
-
-impl<
-        M: listtraits::List,
-        D: listtraits::List,
-        U: BaseUnit + listtraits::Remove<R>,
-        R: listtraits::List,
-    > sealed::MultiplyBy<Units<M, D>, Just<R>> for U
-{
-    type Output = Units<M, R>;
-}
-
-impl<M: listtraits::List, D: listtraits::List, U: BaseUnit + listtraits::Insort<D>>
-    sealed::DivideBy<Units<M, D>, Nothing> for U
-{
-    type Output = Units<M, Inserted<U, D>>;
-}
-
-impl<
-        M: listtraits::List,
-        D: listtraits::List,
-        U: BaseUnit + listtraits::Remove<R>,
-        R: listtraits::List,
-    > sealed::DivideBy<Units<M, D>, Just<R>> for U
-{
-    type Output = Units<R, D>;
-}
-
-type MultipliedBy<M, D, U> = <U as sealed::MultiplyBy<Units<M, D>, Removed<U, D>>>::Output;
-type DividedBy<M, D, U> = <U as sealed::DivideBy<Units<M, D>, Removed<U, M>>>::Output;
-
-impl<T: Mul<Output = T>, U: BaseUnit, V: BaseUnit> Mul<Value<T, U>> for Value<T, V>
-where
-    U: listtraits::Insort<Cons<V, Nil>>,
-{
-    type Output = Value<T, Units<Inserted<U, Cons<V, Nil>>, Nil>>;
-    fn mul(self, rhs: Value<T, U>) -> Self::Output {
-        Value::new(self.t * rhs.t)
-    }
-}
-
-impl<T: Mul<Output = T>, U: BaseUnit, M: listtraits::List, D: listtraits::List>
-    Mul<Value<T, Units<M, D>>> for Value<T, U>
-where
-    U: listtraits::Remove<D> + sealed::MultiplyBy<Units<M, D>, Removed<U, D>>,
-    MultipliedBy<M, D, U>: Unit,
-{
-    type Output = Value<T, MultipliedBy<M, D, U>>;
-
-    fn mul(self, rhs: Value<T, Units<M, D>>) -> Self::Output {
-        Value::new(self.t * rhs.t)
-    }
-}
-
-impl<T: Mul<Output = T>, U: BaseUnit, M: listtraits::List, D: listtraits::List> Mul<Value<T, U>>
-    for Value<T, Units<M, D>>
-where
-    U: listtraits::Remove<D> + sealed::MultiplyBy<Units<M, D>, Removed<U, D>>,
-    MultipliedBy<M, D, U>: Unit,
-{
-    type Output = Value<T, MultipliedBy<M, D, U>>;
-
-    fn mul(self, rhs: Value<T, U>) -> Self::Output {
-        Value::new(self.t * rhs.t)
     }
 }
 
@@ -223,38 +139,6 @@ where
     }
 }
 
-impl<T: Div<Output = T> + Copy, U: BaseUnit, V: BaseUnit> Div<Value<T, V>> for Value<T, U> {
-    type Output = Value<T, Units<Singleton<U>, Singleton<V>>>;
-    fn div(self, rhs: Value<T, V>) -> Self::Output {
-        Value::new(self.t / rhs.t)
-    }
-}
-
-impl<T: Div<Output = T> + Copy, U: BaseUnit, M: listtraits::List, D: listtraits::List>
-    Div<Value<T, U>> for Value<T, Units<M, D>>
-where
-    U: listtraits::Remove<M> + sealed::DivideBy<Units<M, D>, Removed<U, M>>,
-    DividedBy<M, D, U>: Unit,
-{
-    type Output = Value<T, DividedBy<M, D, U>>;
-
-    fn div(self, rhs: Value<T, U>) -> Self::Output {
-        Value::new(self.t / rhs.t)
-    }
-}
-
-impl<T: Div<Output = T> + Copy, U: BaseUnit, M: listtraits::List, D: listtraits::List>
-    Div<Value<T, Units<M, D>>> for Value<T, U>
-where
-    U: listtraits::Remove<M> + sealed::MultiplyBy<Units<D, M>, Removed<U, M>>,
-    MultipliedBy<D, M, U>: Unit,
-{
-    type Output = Value<T, MultipliedBy<D, M, U>>;
-    fn div(self, rhs: Value<T, Units<M, D>>) -> Self::Output {
-        Value::new(self.t / rhs.t)
-    }
-}
-
 impl<
         T: Div<Output = T> + Copy,
         M1: listtraits::List,
@@ -279,14 +163,14 @@ where
     }
 }
 
-impl<T: Mul<Output = T>, U: Unit> Mul<T> for Value<T, U> {
+impl<T: Mul<Output = T>, U: sealed::Unit> Mul<T> for Value<T, U> {
     type Output = Value<T, U>;
     fn mul(self, rhs: T) -> Self::Output {
         Value::new(self.t * rhs)
     }
 }
 
-impl<T: Div<Output = T>, U: Unit> Div<T> for Value<T, U> {
+impl<T: Div<Output = T>, U: sealed::Unit> Div<T> for Value<T, U> {
     type Output = Value<T, U>;
     fn div(self, rhs: T) -> Self::Output {
         Value::new(self.t / rhs)
@@ -295,16 +179,6 @@ impl<T: Div<Output = T>, U: Unit> Div<T> for Value<T, U> {
 
 macro_rules! scalar_div_on_lhs {
     ($t:ty) => {
-        impl<U: BaseUnit, T, S> Div<Value<T, U>> for $t
-        where
-            $t: Div<T, Output = S>,
-        {
-            type Output = Value<S, Units<Singleton<U>, Nil>>;
-            fn div(self, rhs: Value<T, U>) -> Self::Output {
-                Value::new(self / rhs.t)
-            }
-        }
-
         impl<M: $crate::list::sealed::List, D: $crate::list::sealed::List, T, S>
             Div<Value<T, Units<M, D>>> for $t
         where
@@ -320,7 +194,7 @@ macro_rules! scalar_div_on_lhs {
 
 macro_rules! scalar_mul_on_lhs {
     ($t:ty) => {
-        impl<U: Unit, T, S> Mul<Value<T, U>> for $t
+        impl<U: sealed::Unit, T, S> Mul<Value<T, U>> for $t
         where
             $t: Mul<T, Output = S>,
         {
@@ -351,43 +225,16 @@ macro_rules! scalar_divs_on_lhs {
 scalar_muls_on_lhs!(f32, f64, i8, u8, i16, u16, usize, i32, u32, i64, u64, i128, u128);
 scalar_divs_on_lhs!(f32, f64, i8, u8, i16, u16, usize, i32, u32, i64, u64, i128, u128);
 
-impl<T: Add<Output = T>, U: Unit> Add<Value<T, U>> for Value<T, U> {
+impl<T: Add<Output = T>, U: sealed::Unit> Add<Value<T, U>> for Value<T, U> {
     type Output = Value<T, U>;
     fn add(self, rhs: Value<T, U>) -> Self::Output {
         Value::new(self.t + rhs.t)
     }
 }
 
-impl<T: Add<Output = T>, U: BaseUnit> Add<Value<T, U>> for Value<T, Units<Singleton<U>, Nil>> {
-    type Output = Value<T, U>;
-    fn add(self, rhs: Value<T, U>) -> Self::Output {
-        Value::new(self.t + rhs.t)
-    }
-}
-
-impl<T: Add<Output = T>, U: BaseUnit> Add<Value<T, Units<Singleton<U>, Nil>>> for Value<T, U> {
-    type Output = Value<T, U>;
-    fn add(self, rhs: Value<T, Units<Singleton<U>, Nil>>) -> Self::Output {
-        Value::new(self.t + rhs.t)
-    }
-}
-
-impl<T: Sub<Output = T>, U: Unit> Sub<Value<T, U>> for Value<T, U> {
+impl<T: Sub<Output = T>, U: sealed::Unit> Sub<Value<T, U>> for Value<T, U> {
     type Output = Value<T, U>;
     fn sub(self, rhs: Value<T, U>) -> Self::Output {
-        Value::new(self.t - rhs.t)
-    }
-}
-impl<T: Sub<Output = T>, U: BaseUnit> Sub<Value<T, U>> for Value<T, Units<Singleton<U>, Nil>> {
-    type Output = Value<T, U>;
-    fn sub(self, rhs: Value<T, U>) -> Self::Output {
-        Value::new(self.t - rhs.t)
-    }
-}
-
-impl<T: Sub<Output = T>, U: BaseUnit> Sub<Value<T, Units<Singleton<U>, Nil>>> for Value<T, U> {
-    type Output = Value<T, U>;
-    fn sub(self, rhs: Value<T, Units<Singleton<U>, Nil>>) -> Self::Output {
         Value::new(self.t - rhs.t)
     }
 }
