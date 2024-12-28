@@ -10,30 +10,33 @@ concerns
 > distance in centimeters, dividing meters by seconds gave you a value
 > in `m / s` (aka `m * s^-1`).
 
-Specifically, the author evinces skepticism that Rust's unadorned
-alone can allow one to compute with units such that different routes
-to what should be the same unit are recognized by the system as
+Specifically, the author evinces skepticism that Rust's unadorned type
+system alone can allow one to compute with units such that different
+routes to what should be the same unit are recognized by the system as
 equivalent, subject to a set of reasonable desiderata. For instance,
 given a value `a` representing a number of meters, and `b`
 representing a number of seconds, then `a / (b * b)` and `(a / b) / b`
 should both represent _meters per second squared_. The desiderata are
-that there be no set of units defined in advance, and there be no need
-to manually specify equivalences between units.
+that there be no set of units defined in advance once and for all (ie
+it should be extensible by clients), and there be no need to manually
+specify equivalences between units (eg between meters per second, per
+second, and meters per second-squared).
 
-In this crate, "units" are represented as a pair of sorted type-level
-lists of types implementing the `BaseUnit` trait, representing the
-multiplied and divided units, respectively. (This seems simpler than
-having an `Inv<U>` representing the inversion of a single unit.) The
-only thing required to be a `BaseUnit` is to have an associated
-constant giving the type a name, which is used for sorting, because
-the comparison of `TypeId`s is not yet possible in a const context..
-Given the following:
+This crate provides values tagged with units. Units are implemented as
+a zero-sized type parameterized by two type-level lists containing
+types implementing the `BaseUnit` trait. The two lists represent the
+numerator and denominator of a fraction, and they are maintained in
+sorted order by unit name. (Because comparing `TypeId`s is not yet
+possible in a const context, this means that the `BaseUnit` trait has
+an associated constant which provides the name of the unit. This is in
+fact the only thing the trait does; it is purely a named tag.) Given the
+following:
 
 ```rust
 defunit!(Meter);
 defunit!(Second);
 let a = Meter::new(1,0);
-let b = Meter::new(2.0);
+let b = Second::new(2.0);
 ```
 
 Then both `a / (b * b)` and `(a / b) / b` will have the inferred type
