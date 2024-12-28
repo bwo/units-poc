@@ -1,10 +1,10 @@
 #![feature(generic_const_exprs)]
 
-pub use list::Inserted;
+pub use list::{Cons, Inserted, Nil};
 pub use units::{BaseUnit, Units, Value};
 
-mod list;
-mod units;
+pub mod list;
+pub mod units;
 
 #[macro_export]
 macro_rules! defunit {
@@ -47,22 +47,41 @@ macro_rules! vtype {
     ($t:ty; $($units:tt)*) => { Value<$t, units!($($units)*)> }
 }
 
-/// ```compile_fail
+/// ```compile_faile
 ///
-/// defunit!(A)
-/// defunit!(B)
+/// #[macro_use] extern crate units_poc;
+/// use units_poc::{defunit, Value};
+/// defunit!(A);
+/// defunit!(B);
 /// let _ = A::new(1.0) + B::new(1.0);
 /// ```
 ///
 /// ```compile_fail
 ///
-/// defunit!(A)
-/// defunit!(B)
+/// #[macro_use] extern crate units_poc;
+/// use units_poc::{defunit, Value};
+/// defunit!(A);
+/// defunit!(B);
 /// let _ = A::new(1.0) + (B::new(1.0) * A::new(2.0));
 /// ```
 
 #[cfg(doctest)]
 pub struct T;
+
+/// ```compile_fail
+///
+/// #[macro_use] extern crate units_poc;
+/// use units_poc::{defunit, Value};
+/// defunit!(Meter);
+/// defunit!(Second);
+/// let a = Meter::new(1.0);
+/// let b = Second::new(2.0);
+/// let _ = (a / (b * b)) + (a / b);
+/// ```
+#[cfg(doctest)]
+pub struct Yoric;
+
+
 
 #[cfg(test)]
 mod tests {
@@ -91,5 +110,15 @@ mod tests {
         let _: vtype!(f64; B / A) = b * 2.0 / a;
         let x: vtype!(f64; D, C, B / E, E, A) = (b * 2.0 * c * d) / (e * a * e);
         let _: vtype!(f64; E, E, A / D, B) = (2.0 * c) / x;
+    }
+
+    #[test]
+    fn test_yoric() {
+	defunit!(Meter);
+	defunit!(Second);
+
+	let a = Meter::new(1.0);
+	let b = Second::new(2.0);
+	let _ = (a / (b * b)) - ((a / b) / b);
     }
 }
