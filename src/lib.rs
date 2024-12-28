@@ -119,6 +119,6 @@ mod tests {
 
 	let a = Meter::new(1.0);
 	let b = Second::new(2.0);
-	let _ = (a / (b * b)) - ((a / b) / b);
+	let _ : vtype!(f64; Meter / Second, Second) = (a / (b * b)) - ((a / b) / b);
     }
 }

@@ -37,14 +37,16 @@ let b = Meter::new(2.0);
 ```
 
 Then both `a / (b * b)` and `(a / b) / b` will have the inferred type
-`Value<f64, Units<Cons<Meter, Nil>, Cons<Second, Cons<Second,
-Nil>>>>`. We canonicalize the representation whenever a multiplication
-or division is performed; multiplying by `c = Second::new(3.0)` will
-remove the first `Second` type from the second list. Sortability gives
-us commutativity of multiplication by default (`a * b` and `b * a`
-will both give the type `Value<f64, Units<Cons<Second, Cons<Meter,
-Nil>>>, Nil>>`) and also means that merging and simplifying can be
-implemented fairly easily and not extremely inefficiently.
+`Value<f64, Units<Cons<Meter, Nil>, Cons<Second, Cons<Second, Nil>>>>`
+(a macro is provided to enable writing explicit types more easily:
+`vtype!(f64; Meter / Second, Second)`). We canonicalize the
+representation whenever a multiplication or division is performed;
+multiplying by `c = Second::new(3.0)` will remove the first `Second`
+type from the second list. Sortability gives us commutativity of
+multiplication by default (`a * b` and `b * a` will both give the type
+`Value<f64, Units<Cons<Second, Cons<Meter, Nil>>>, Nil>>`) and also
+means that merging and simplifying can be implemented fairly easily
+and not extremely inefficiently.
 
 Since units are just an essentially meaningless tag, they are
 perfectly well definable in other crates and in fact this crate only
