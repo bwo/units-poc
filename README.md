@@ -1,5 +1,9 @@
 # UNITS-POC
 
+If you want to *actually* use units of measure with the aid of the
+type system, you want [`uom`](https://docs.rs/uom/latest/uom/); this is
+really just an illustration of some type-level programming.
+
 This repo contains a rough-and-ready proof of concept meant to answer the
 challenge posed [in this
 article](https://yoric.github.io/post/rust-refinement-types/), which
@@ -56,11 +60,14 @@ perfectly well definable in other crates and in fact this crate only
 defines units for testing, and since equivalence is simply having the
 same canonical form, we have the desiderata from the blog post. On the
 other hand, for specifically *units of measure*, this is not
-necessarily what you really want; there is no way, for instance, to
-express that yards and meters are both units of length and should
-perhaps be interconvertible (albeit not implicitly), the way you can
-do in [Frink](https://frinklang.org/). On the final hand, this saves
-me from having to have an opinion on whether or not [the candela is a
+necessarily what you really want (again, you want
+[`uom`](https://docs.rs/uom/latest/uom/), which actually knows that
+units of measure are supposed to measure things!) there is no way, for
+instance, to express that yards and meters are both units of length
+and should perhaps be interconvertible (albeit not implicitly), the
+way you can do in [Frink](https://frinklang.org/), and possibly the
+aforementioned `uom`. On the final hand, this saves me from having to
+have an opinion on whether or not [the candela is a
 scam](https://frinklang.org/frinkdata/units.txt), and being able to
 answer the question "how big of a cube is a gallon" is not really the
 problem at issue.
